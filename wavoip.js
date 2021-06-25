@@ -18,7 +18,7 @@ const signaling_data_cb = (a, b, c) => console.log('voip signaling data: ', a , 
 //wavoip.registerLoggingCallback(log_cb)
 wavoip.registerEventCallback(event_cb)
 wavoip.registerSignalingXmppCallback(signaling_data_cb)
-wavoip.init("919460848720@s.whatsapp.net", false, true)
+wavoip.init("YOUR_NUMBER@s.whatsapp.net", false, true)
 wavoip.setScreenSize(1920, 1080)
 wavoip.updateAudioVideoSwitch(true)
 //wavoip.getAVDevices((function(t){console.log(t)}))
