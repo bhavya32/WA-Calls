@@ -1,6 +1,9 @@
 const baileys = require('@adiwajshing/baileys');
+var atob = require('atob')
+var crypto = require("crypto")
+var btoa = require('btoa')
 const fs = require('fs');
-const wavoip = require('./wavoip.node')
+const wavoip = require('wavoip')
 client = new baileys.WAConnection()
 fs.existsSync("./tokens/client.json") && client.loadAuthInfo("./tokens/client.json")
 client.on('open', open => {
@@ -8,30 +11,65 @@ client.on('open', open => {
     fs.writeFileSync("./tokens/client.json", JSON.stringify(authInfo, null, '\t'))
 })
 client.logger.level = 'warn'
+client.browserDescription = ['Windows', 'electron', '10'];
 client.connect()
-wavoip.cleanup()
 const log_cb = (event) => console.log('log', wavoip.eventToStr(event))
 const test = (event) => console.log('log', event)
 const event_cb = (event, eventData) => console.log("got event: " + wavoip.eventToStr(event))
-const signaling_data_cb = (a, b, c) => console.log('voip signaling data: ', a , b, c)
-
-//wavoip.registerLoggingCallback(log_cb)
+const signaling_data_cb = (a, b, c) => {
+	if(c[0]=="accept"){
+	   var tag = generate_tag()
+	   var jsjs = ["action","call",["call",{"from":client.user.jid,"to":b,"id":tag},[["accept",{"call-id":a,"call-creator":b,"device":"web"},[["audio",{"enc":"opus","rate":"16000"},null],["te",{"priority":"2"},array2b64(c[2][1][2])],["net",{"medium":"2"},null],["encopt",{"keygen":"2"},null],["capability",{"ver":"1"},"AQT3C84D"]]]]]]		
+	   client.send(`${tag},,${JSON.stringify(jsjs)}`)
+	   var res = client.waitForMessage(tag, true).then((json) => {
+		   
+		   if (json.payload){
+			   var number = json.payload[2][0][1]["call-creator"]
+	           var x = json.payload
+	           var voip_set = [120,156,125,84,219,114,227,32,12,253,23,63,231,193,205,182,123,233,207,104,48,200,14,13,183,130,136,147,233,244,223,87,194,184,77,59,59,251,102,208,225,72,58,62,210,219,160,80,15,207,111,131,143,6,135,231,225,56,28,6,229,150,152,45,157,60,159,57,10,151,31,195,251,97,152,86,20,92,45,8,170,26,27,33,41,125,70,130,172,72,30,62,8,198,160,110,52,111,252,229,212,13,102,225,30,70,9,97,216,67,129,223,181,7,135,97,206,202,35,248,194,199,159,35,159,117,244,201,225,213,210,141,111,158,228,98,202,59,129,13,150,160,23,129,65,77,14,13,204,49,195,197,26,140,80,211,146,149,249,40,36,38,178,49,20,193,22,212,53,35,20,170,129,51,45,176,114,107,216,243,127,143,37,149,203,30,139,169,22,144,110,87,156,50,105,152,107,208,157,116,160,92,145,33,46,234,115,207,207,130,97,32,37,128,86,240,97,120,153,64,58,5,99,139,86,217,128,142,53,16,204,246,218,249,57,110,195,164,130,17,149,64,173,42,227,39,179,77,140,15,179,93,58,24,131,73,4,41,58,103,195,2,100,61,198,74,92,114,211,247,97,28,27,68,52,145,114,32,6,174,154,229,23,197,53,4,92,226,7,77,195,212,208,42,23,245,88,53,141,115,117,32,170,127,69,149,146,53,24,244,245,250,245,126,209,202,185,59,238,187,158,58,98,171,22,47,40,13,255,63,73,183,146,93,150,219,36,106,5,164,53,230,51,120,170,157,183,43,98,16,69,147,196,166,202,30,156,42,59,145,84,131,121,215,132,47,255,136,26,27,111,216,40,87,200,180,195,239,2,94,93,161,224,43,100,124,109,42,126,141,190,88,34,230,245,213,145,77,206,98,222,167,163,65,54,59,67,156,103,23,149,249,228,134,116,230,145,192,152,13,191,77,90,178,62,53,98,231,226,42,255,148,13,151,69,23,85,228,23,216,248,90,177,34,156,241,182,91,55,111,227,104,195,156,82,231,229,66,183,6,142,79,99,63,111,193,99,51,225,10,70,145,98,175,170,5,97,178,180,79,228,227,56,118,35,158,108,161,214,174,54,51,92,148,171,18,255,117,252,125,188,11,27,76,177,240,136,237,225,163,204,159,88,179,207,235,157,199,50,250,9,232,148,35,145,248,241,223,202,50,111,91,2,146,105,252,166,173,108,24,6,21,225,125,108,77,183,177,118,92,120,208,55,30,102,110,8,37,3,150,83,116,230,195,227,242,147,11,41,191,11,147,184,132,221,219,125,129,181,93,65,40,246,144,85,227,229,78,223,11,191,75,110,10,177,161,40,59,121,32,83,179,9,127,73,87,94,3,55,249,171,92,127,209,217,38,98,11,19,156,63,124,254,254,254,23,73,73,202,170]
+	           obj = {
+				peer_jid: number.split("@")[0]+"@s.whatsapp.net",
+                type: "accept",
+				error: 0,
+				ack: ["ack",null,[["accept",{"call-id":x[2][0][1]["call-id"],"call-creator":number,"device":"web"},[["audio",{"enc":"opus","rate":16000},null],["te",{"priority":2},b64toarray(json.payload[2][0][2][1][2])],["net",{"medium":2},null],["encopt",{"keygen":2},null],["capability",{"ver":1},[1,4,247,11,206,3]]]],["rte",null,b64toarray(json.payload[2][1][2])],["voip_settings",{"uncompressed":1},b64toarray(json.payload[2][2][2])],["relay",{"peer_pid":1,"attribute_padding":0,"transaction-id":0},[["token",null,b64toarray(json.payload[2][3][2][0][2])],["te",null,b64toarray(json.payload[2][3][2][1][2])],["te",null,b64toarray(json.payload[2][3][2][2][2])],["te",null,b64toarray(json.payload[2][3][2][3][2])],["te",null,b64toarray(json.payload[2][3][2][4][2])]]]]]
+			   }
+			 wavoip.handleIncomingSignalingAck(obj)
+	        }
+		   })
+	   jsjs = ["query",{"type":"call","call-id":a,"kind":"accept","epoch":client.msgCount.toString()},null]
+		client.sendBinary(jsjs, [{"metricName":"QUERY_CALL"},{"metric":38}], undefined,false)
+	}else if(c[0]=="transport"){
+		var tag = Date.now()
+		var x = c
+		console.log(client.user.jid)
+		var payload = ["action","call",["call",{"from":client.user.jid,"to":b,"id":tag},[["transport",{"call-id":a,"call-creator":b},[["te",{"priority":x[2][0][1].priority},array2b64(x[2][0][2])],["net",{"medium":"2"},null]]]]]]
+		client.send(`${tag},,${JSON.stringify(jsjs)}`)
+	}else if(c[0]=="relaylatency"){
+		var tag = Date.now()
+		var x = c
+		var payload = ["action","call",["call",{"from":client.user.jid,"to":b,"id":tag},[["relaylatency",{"call-id":a,"call-creator":b,"transaction-id":"0"},[["te",{"latency":x[2][0][1].latency},array2b64(x[2][0][2])]]]]]]
+		client.send(`${tag},,${JSON.stringify(jsjs)}`)
+	}else{
+		console.log('voip signaling data: ', a , b, JSON.stringify(c))
+	}
+}
+	
+wavoip.cleanup()
+wavoip.init("919876543210@s.whatsapp.net", false, true)
+wavoip.getAVDevices((function(t){}))
 wavoip.registerEventCallback(event_cb)
 wavoip.registerSignalingXmppCallback(signaling_data_cb)
-wavoip.init("YOUR_NUMBER@s.whatsapp.net", false, true)
-wavoip.setScreenSize(1920, 1080)
-wavoip.updateAudioVideoSwitch(true)
-//wavoip.getAVDevices((function(t){console.log(t)}))
-
-wavoip.setLogPath("D:\\ws\voip_crash_log.txt")
+//wavoip.registerLoggingCallback(log_cb)
+wavoip.setLogPath("D:\\ws\\voip_crash_log.txt")
+wavoip.getAVDevices((function(t){}))
 wavoip.updateNetworkMedium(2, 0)
+wavoip.updateAudioVideoSwitch(true)
 client.on('CB:Call', async json => {
-	 //console.log(json)
-        let number = json[1]['from'];
+	let number = json[1]['from'];
         let isOffer = json[1]["type"] == "offer";
 
         if (number && isOffer && json[1]["data"]) {
-			var time = Date.now()
+			var time = '"' + Date.now() + '"'
 			var obj = {elapsed_msec: undefined,
 						 epoch_msec: time*1000,
 						 is_offline: undefined,
@@ -42,55 +80,71 @@ client.on('CB:Call', async json => {
 			}
 			wavoip.handleIncomingSignalingOffer(obj, false, 5)
 			console.log("handleIncomingSignalingOffer");
-			await new Promise(resolve => setTimeout(resolve, 2000));
-			
-			var tag = Date.now()
-			var jsjs = ["query",{"type":"call","call-id":json[1]['id'],"kind":"accept","epoch":"20"},null]
-			client.sendBinary(jsjs, [{"metricName":"QUERY_CALL"},{"metric":38}], undefined,true)
-			
-			
-			wavoip.acceptCall(true, false)
-			await new Promise(resolve => setTimeout(resolve, 1000));
-			tag = Date.now()
-			jsjs = ["action","call",["call",{"from":client.user.jid,"to":number.split("@")[0]+"@s.whatsapp.net","id":tag},[["accept",{"call-id":json[1]['id'],"call-creator":number.split("@")[0]+"@s.whatsapp.net","device":"web"},[["audio",{"enc":"opus","rate":"16000"},null],["te",{"priority":"2"},"wKgAAvHu"],["net",{"medium":"2"},null],["encopt",{"keygen":"2"},null],["capability",{"ver":"1"},"AQT3C84D"]]]]]]
-			client.send(`${tag},${JSON.stringify(jsjs)}`)
-			
-			obj = {
-				ack: ["ack",null,[["accept",{"call-id":json[1]['id'],"call-creator":number,"device":"web"},[["audio",{"enc":"opus","rate":16000},null],["te",{"priority":2},[192,168,0,2,232,12]],["net",{"medium":2},null],["encopt",{"keygen":2},null],["capability",{"ver":1},[1,4,247,11,206,3]]]],["rte",null,[122,160,14,39,124,213]],["voip_settings",null,[120,156,125,84,93,115,227,32,12,252,47,126,206,131,155,107,238,163,127,70,131,65,118,104,48,16,16,113,50,157,252,247,147,48,78,211,206,205,189,25,107,89,86,203,138,143,78,161,238,222,62,186,57,24,236,222,186,125,183,235,148,155,66,178,116,156,121,205,85,184,252,232,238,187,110,88,80,112,37,35,168,98,108,128,168,244,9,9,146,34,217,248,34,24,131,186,210,124,240,151,83,55,24,133,187,235,165,132,126,43,121,222,87,55,236,186,49,169,25,97,206,188,252,217,243,90,135,57,58,188,90,186,241,159,131,252,24,210,70,96,189,37,104,34,208,171,193,161,129,49,36,184,88,131,1,74,156,146,50,15,33,33,146,13,62,11,54,163,46,9,33,83,241,124,210,4,11,183,134,237,252,239,181,168,82,222,106,33,150,12,210,237,130,67,34,13,99,241,186,145,118,148,10,50,196,5,125,106,231,179,97,232,73,9,160,10,222,117,239,3,72,167,96,108,214,42,25,208,161,120,130,209,94,27,63,215,173,31,148,55,226,18,168,69,37,252,100,182,145,241,126,180,83,3,163,55,145,32,6,231,172,159,128,236,140,161,16,75,174,254,190,244,125,133,136,39,34,7,130,103,213,108,191,56,174,193,227,20,30,52,21,83,124,85,46,238,177,107,26,199,226,64,92,255,138,202,57,105,48,56,151,235,215,255,147,86,206,61,113,63,245,212,16,171,90,188,160,52,252,255,67,90,148,236,52,221,6,113,203,35,45,33,157,96,166,210,120,155,35,6,81,60,137,28,170,52,131,83,121,35,18,53,152,54,79,248,231,31,113,99,229,245,43,229,2,137,54,248,83,97,86,87,200,120,134,132,231,234,226,215,234,187,37,98,222,185,56,178,209,89,76,219,116,84,200,26,103,8,227,232,130,50,159,220,16,79,60,18,24,146,225,189,81,203,169,135,74,236,92,88,228,78,57,112,73,124,81,89,174,192,134,115,193,130,112,194,219,22,221,180,142,163,245,99,140,141,151,133,174,13,236,15,125,91,175,197,125,13,225,2,70,145,226,172,170,9,97,176,180,77,228,107,223,183,32,30,109,166,218,174,54,35,92,148,43,82,255,181,255,189,127,42,27,140,33,243,136,109,229,189,204,159,68,179,205,235,83,198,18,206,3,208,49,5,34,201,227,191,157,101,222,250,8,200,73,253,55,111,229,133,97,80,22,222,215,218,116,29,107,199,194,189,190,241,48,115,67,40,39,96,62,6,103,30,25,151,75,206,164,230,205,152,200,18,182,108,183,7,172,190,21,50,4,171,143,151,120,229,169,190,201,37,177,156,172,147,141,196,137,36,56,61,98,123,191,255,5,65,254,184,86]],["relay",{"peer_pid":1,"attribute_padding":0,"transaction-id":0},[["token",null,[8,1,73,124,255,146,153,219,103,60,243,126,194,54,189,119,240,209,26,226,37,214,174,148,137,67,168,63,169,54,241,89,60,36,57,143,11,87,79,228,197,143,166,184,192,133,88,99,210,190,170,38,46,246,160,23,114,200,154,191,49,150,181,0,133,108,243,25,208,16,123,203,205,191,58,153,222,28,177,243,43,57,49,104,91,101,94,234,84,201,209,141,32,114,18,49,120,222,87,61,155,96]],["token",{"id":1},[8,2,73,124,255,146,153,219,103,60,243,126,194,54,189,119,240,209,252,172,5,142,145,115,213,194,148,79,85,114,28,14,78,82,13,53,187,127,199,7,85,79,215,222,232,235,183,202,170,187,201,112,70,67,44,121,190,136,184,106,227,146,38,82,201,52,52,249,153,160,202,21,226,58,178,2,216,208,137,50,62,248,89,230,147,176,62,47,195,133,187,209,68,51,187,77,232,43,137,214,226,46]],["te2",{"relay_id":0,"token_id":1},[116,119,74,98,13,150]],["te2",{"relay_id":0,"token_id":1},[36,4,168,0,0,6,0,144,250,206,176,12,51,51,77,240,13,150]],["te2",{"relay_id":1},[157,240,198,62,13,150]],["te2",{"relay_id":1},[42,3,40,128,242,68,0,192,250,206,176,12,0,0,1,119,13,150]],["te2",{"relay_id":2},[157,240,16,51,13,150]],["te2",{"relay_id":2},[42,3,40,128,242,47,0,195,250,206,176,12,0,0,1,119,13,150]],["te2",{"relay_id":3},[157,240,228,62,13,150]],["te2",{"relay_id":3},[42,3,40,128,242,104,0,192,250,206,176,12,0,0,1,119,13,150]],["te2",{"relay_id":4},[157,240,7,51,13,150]],["te2",{"relay_id":4},[42,3,40,128,242,12,0,195,250,206,176,12,0,0,1,119,13,150]]]]]],
-				error: 0,
-				peer_jid: number.split("@")[0]+"@s.whatsapp.net",
-                type: "accept"
-			}
-			wavoip.handleIncomingSignalingAck(obj)
-			
-			obj = {"peer_jid":number.split("@")[0]+"@s.whatsapp.net","payload":["transport",{"call-creator":number,"call-id":json[1]['id']},[["te",{"priority":2},[25,151,120,235,151,148]],["te",{"priority":1},[157,38,12,33,151,148]],["net",{"medium":1},null]]]}
-			wavoip.handleIncomingSignalingMsg(obj)
-			
-			
-			obj = {
-				elapsed_msec: undefined,
-                epoch_msec: undefined,
-				is_offline: undefined,
-				payload: ["accept",{"call-id":json[1]['id'],"call-creator":number},null],
-				peer_app_version: undefined,
-				peer_jid: number.split("@")[0]+"@s.whatsapp.net",
-				peer_platform: undefined
-		}
-			wavoip.handleIncomingSignalingReceipt(obj)
-			
-			console.log("handleIncomingSignalingReceipt");
-        }else if (number && json[1]["type"] == "relaylatency") {
+			await new Promise(resolve => setTimeout(resolve, 2000));			
+			wavoip.acceptCall(true, true)
+		}else if (number && json[1]["type"] == "relaylatency") {
 			var obj = {elapsed_msec: undefined,
 						 epoch_msec: undefined,
 						 is_offline: undefined,
-						 payload:["relaylatency", {"call-creator": number, 'call-id': json[1]['id']}, [["te",{"latency":33554455},[116,119,74,98,13,150]]]],
+						 payload:["relaylatency", {"call-creator": number, 'call-id': json[1]['id']}, [["te",{"latency":json[1]['data'][0][2][0][1]['latency']},b64toarray(json[1]['data'][0][2][0][2])]]],
 						 peer_app_version: undefined,
 						 peer_jid: number.split("@")[0]+"@s.whatsapp.net",
 						 peer_platform: undefined
 			}
-			wavoip.handleIncomingSignalingOffer(obj)
+			wavoip.handleIncomingSignalingMsg(obj)
+        }else if (number && json[1]["type"] == "transport") {
+			obj = {
+				peer_jid:number.split("@")[0]+"@s.whatsapp.net",
+				payload:["transport",{"call-creator":number,"call-id":json[1]['id']},[["te",{"priority":2},b64toarray(json[1]['data'][0][2][0][2])],["te",{"priority":1},b64toarray(json[1]['data'][0][2][1][2])],["net",{"medium":2},null]]]
+				}
+			wavoip.handleIncomingSignalingMsg(obj)
+        }else if (number && json[1]["type"] == "receipt") {
+			obj = {
+				elapsed_msec: undefined,
+                epoch_msec: undefined,
+				is_offline: undefined,
+				payload: ["accept",{"call-id":json[1].data[1]["call-id"],"call-creator":number},null],
+				peer_app_version: undefined,
+				peer_jid: number.split("@")[0]+"@s.whatsapp.net",
+				peer_platform: undefined
+		}
+		    wavoip.handleIncomingSignalingReceipt(obj)
+			console.log("handleIncomingSignalingReceipt");
         }else{
-			//console.log(JSON.stringify(json))
+			console.log(json)
 		}
 		
  })
+
+function b64toarray(base64) {
+    var binary_string = atob(base64);
+    var len = binary_string.length;
+    var bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    var array = Array.from(bytes)
+    return array
+}
+
+function array2b64(array) {
+	var array = Uint8Array.from(array)
+	var bytes = []
+    for (var i = 0; i < array.length; i++) {
+		bytes[i]=String.fromCharCode(array[i])
+    }
+	bytes=bytes.join("")
+	return btoa(bytes)
+}
+function generate_tag(){
+	var e = new Uint8Array(8);
+e = crypto.randomFillSync(e)
+var n = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70]
+ for (var t = new Array(16), r = 0, a = 0; r < e.length; r++,
+                a += 2) {
+                    var i = e[r];
+                    t[a] = n[i >> 4],
+                    t[a + 1] = n[15 & i]
+                }
+ return "3EB0" + String.fromCharCode.apply(String, t);
+}
