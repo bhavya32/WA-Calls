@@ -96,7 +96,7 @@ function accept_call(call_id: string, from: string, node: any) {
         tag: "call",
         attrs: {
             to: from,
-            id: baileys_sock.generateMessageTag,
+            id: baileys_sock.generateMessageTag(),
         },
         content: [{
             tag: "accept",
