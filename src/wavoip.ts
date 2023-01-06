@@ -1,19 +1,13 @@
 import makeWASocket, { BufferJSON, useMultiFileAuthState, DisconnectReason, BinaryNode, Browsers } from '@adiwajshing/baileys'
-import {handle_ack, handle_call, initialize_wavoip} from './wavoip_handler'
-var wavoip = require('./wavoip.node')
+import { call_event } from './types'
+import {endCall, initialize_wavoip, sendAcceptToWavoip, startCall} from './wavoip_handler'
 const P = require('pino')
+var player_process: any
+var spawn = require('child_process').spawn
 
-function startListeners(sock: any) {
-  console.log("started listening")
-  
-  sock.ws.on(`CB:call`, (node: BinaryNode) => {
-	  //console.dir(node, {depth:null, colors:true});
-    handle_call(node)
-  })
-
-  sock.ws.on(`CB:ack,class:call`, (node: BinaryNode) => {
-    handle_ack(node)
-  })
+function startCallw() {
+  var jid: string = "911234567890"
+  startCall(jid)
 }
 
 async function connectToWhatsApp() {
@@ -29,7 +23,24 @@ async function connectToWhatsApp() {
 
   sock.ev.on("creds.update", saveCreds);
 
-  setTimeout(startListeners, 15000, sock)
+  sock.ev.on("call", async (event: call_event) => {
+    if (event.event == "offer"){
+      setTimeout(sendAcceptToWavoip, 2000)
+    }
+    else if (event.event == "connected"){
+      player_process = spawn("./audio.exe", ["audio", "sound.mp3"])
+      if (!player_process) {
+        console.log("Error spawning audio.exe")
+      }
+      player_process.on('close',function(err:any){ 
+        endCall()
+      })
+    }
+    else if (event.event == "terminated") {
+      if (player_process) player_process.kill()
+    }
+  })
+
   sock.ev.on("connection.update", async (update) => {
 
     const { connection, lastDisconnect } = update;
@@ -45,6 +56,7 @@ async function connectToWhatsApp() {
 
     if (connection === "open") {
       initialize_wavoip(sock, state)
+      //setTimeout(startCallw, 2000)
     }
 
   });

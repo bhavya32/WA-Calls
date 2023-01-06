@@ -1,15 +1,11 @@
 {
   "dependencies": {
-    "@adiwajshing/baileys": "^4.4.0",
+    "@adiwajshing/baileys": "github:adiwajshing/baileys",
     "@adiwajshing/keyed-db": "^0.2.4",
     "pino": "^8.7.0",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.18.3"
+    "qrcode-terminal": "^0.12.0"
   },
   "devDependencies": {
     "@types/ws": "^8.5.3"
-  },
-  "scripts": {
-    "start": "C:\\Users\\New\\Downloads\\electron-v12.0.0-beta.31-win32-x64\\electron.exe dist\\wavoip.js"
   }
 }

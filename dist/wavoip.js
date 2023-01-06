@@ -34,17 +34,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const baileys_1 = __importStar(require("@adiwajshing/baileys"));
 const wavoip_handler_1 = require("./wavoip_handler");
-var wavoip = require('./wavoip.node');
 const P = require('pino');
-function startListeners(sock) {
-    console.log("started listening");
-    sock.ws.on(`CB:call`, (node) => {
-        //console.dir(node, {depth:null, colors:true});
-        (0, wavoip_handler_1.handle_call)(node);
-    });
-    sock.ws.on(`CB:ack,class:call`, (node) => {
-        (0, wavoip_handler_1.handle_ack)(node);
-    });
+var player_process;
+var spawn = require('child_process').spawn;
+function startCallw() {
+    var jid = "911234567890";
+    (0, wavoip_handler_1.startCall)(jid);
 }
 function connectToWhatsApp() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -56,7 +51,24 @@ function connectToWhatsApp() {
             logger: P({ level: 'error' }),
         });
         sock.ev.on("creds.update", saveCreds);
-        setTimeout(startListeners, 15000, sock);
+        sock.ev.on("call", (event) => __awaiter(this, void 0, void 0, function* () {
+            if (event.event == "offer") {
+                setTimeout(wavoip_handler_1.sendAcceptToWavoip, 2000);
+            }
+            else if (event.event == "connected") {
+                player_process = spawn("./audio.exe", ["audio", "sound.mp3"]);
+                if (!player_process) {
+                    console.log("Error spawning audio.exe");
+                }
+                player_process.on('close', function (err) {
+                    (0, wavoip_handler_1.endCall)();
+                });
+            }
+            else if (event.event == "terminated") {
+                if (player_process)
+                    player_process.kill();
+            }
+        }));
         sock.ev.on("connection.update", (update) => __awaiter(this, void 0, void 0, function* () {
             const { connection, lastDisconnect } = update;
             if (connection === "close") {
@@ -68,6 +80,7 @@ function connectToWhatsApp() {
             }
             if (connection === "open") {
                 (0, wavoip_handler_1.initialize_wavoip)(sock, state);
+                //setTimeout(startCallw, 2000)
             }
         }));
     });
